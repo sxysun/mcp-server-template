@@ -44,6 +44,9 @@ DIGEST_INTERVAL_MINUTES = 3  # Send digest every 10 minutes
 # Store pending scrape tasks
 scrape_queue = asyncio.Queue()
 
+# Flag to temporarily disable periodic digest sender during test
+test_mode_active = False
+
 async def scrape_worker():
     """Worker that processes scraping tasks from the queue"""
     while True:
@@ -99,6 +102,11 @@ async def periodic_digest_sender():
         try:
             # Wait for the interval
             await asyncio.sleep(DIGEST_INTERVAL_MINUTES * 60)
+
+            # Skip if test mode is active
+            if test_mode_active:
+                print("Skipping periodic digest - test mode active")
+                continue
 
             print("Checking for unshared conversations...")
 
@@ -337,7 +345,13 @@ async def handle_scrape_all_pending(request):
 
 async def handle_test_full_flow(request):
     """Test endpoint: Mark all as unshared, scrape ALL unscraped entries, and send digest immediately"""
+    global test_mode_active
+
     try:
+        # Set test mode to prevent periodic sender from interfering
+        test_mode_active = True
+        print("Test mode activated - periodic digest sender disabled")
+
         # Step 0: Mark all conversations as unshared (for testing)
         unshared_count = mark_all_conversations_as_unshared()
         print(f"Marked {unshared_count} conversations as unshared for testing")
@@ -398,6 +412,10 @@ async def handle_test_full_flow(request):
 
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
+    finally:
+        # Always reset test mode when done
+        test_mode_active = False
+        print("Test mode deactivated - periodic digest sender re-enabled")
 
 async def start_background_tasks(app):
     """Start background workers"""

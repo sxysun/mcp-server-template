@@ -336,30 +336,44 @@ async def handle_scrape_all_pending(request):
         return web.json_response({"error": str(e)}, status=500)
 
 async def handle_test_full_flow(request):
-    """Test endpoint: Mark all as unshared, scrape all pending links, and send digest immediately"""
+    """Test endpoint: Mark all as unshared, scrape ALL unscraped entries, and send digest immediately"""
     try:
         # Step 0: Mark all conversations as unshared (for testing)
         unshared_count = mark_all_conversations_as_unshared()
         print(f"Marked {unshared_count} conversations as unshared for testing")
 
-        # Step 1: Queue all pending links for scraping
+        # Step 1: Get ALL unscraped entries (pending status OR no conversation content)
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT chatgpt_url
+                    SELECT chatgpt_url, status, conversation_content
                     FROM riff
                     WHERE status = 'pending'
+                       OR conversation_content IS NULL
+                       OR conversation_content = ''
+                       OR conversation_content LIKE '[Error]%'
+                       OR conversation_content LIKE '[Placeholder]%'
                 """)
-                pending_links = cur.fetchall()
+                unscraped_links = cur.fetchall()
+
+        print(f"Found {len(unscraped_links)} unscraped entries to process")
 
         scraped_count = 0
-        if pending_links:
-            for link in pending_links:
-                url = link['chatgpt_url']
-                # Scrape synchronously for testing
-                content, digest = scrape_and_digest_chatgpt_conversation(url)
+        failed_count = 0
+        for link in unscraped_links:
+            url = link['chatgpt_url']
+            print(f"Scraping: {url}")
+
+            # Scrape synchronously for testing
+            content, digest = scrape_and_digest_chatgpt_conversation(url)
+
+            if "[Error]" not in content:
                 update_conversation_content(url, content, digest)
                 scraped_count += 1
+                print(f"  ✅ Successfully scraped and stored")
+            else:
+                print(f"  ❌ Scraping failed: {content[:100]}")
+                failed_count += 1
 
         # Step 2: Get today's conversations and send digest (now includes previously shared ones)
         conversations = get_conversations_by_date()
@@ -375,6 +389,8 @@ async def handle_test_full_flow(request):
             "status": "complete",
             "unshared_count": unshared_count,
             "scraped_count": scraped_count,
+            "failed_count": failed_count,
+            "total_unscraped": len(unscraped_links),
             "conversation_count": len(conversations),
             "digest_sent": True,
             "message_preview": message[:200] + "..." if len(message) > 200 else message

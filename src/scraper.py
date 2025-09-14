@@ -35,7 +35,8 @@ def scrape_and_digest_chatgpt_conversation(url: str) -> tuple[str, str]:
     """
     try:
         # Use Firecrawl to scrape the ChatGPT share page
-        doc = firecrawl.scrape(url, formats=["markdown", "summary"])
+        doc = firecrawl.scrape(url, formats=["markdown"])
+        # doc = firecrawl.scrape(url, formats=["markdown", "summary"])
         # Extract the markdown content from the Document object
         full_content = ""
         digest = ""
@@ -77,7 +78,7 @@ def _generate_digest(content: str) -> str:
                 },
                 {
                     "role": "user",
-                    "content": f"Conversation to summarize:\n\n{content[:3000]}"  # Limit context
+                    "content": f"Conversation input:\n\n{content[:3000]}"  # Limit context
                 }
             ]
         }

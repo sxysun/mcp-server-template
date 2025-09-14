@@ -1,66 +1,177 @@
-# MCP Server Template
+# ChatGPT Riff Server
 
-A minimal [FastMCP](https://github.com/jlowin/fastmcp) server template for Render deployment with streamable HTTP transport.
+An intelligent MCP server that enables users to privately share ChatGPT conversations with Poke, which then processes and intelligently shares synthesized insights to group chats. Built with [FastMCP](https://github.com/jlowin/fastmcp) and designed to transform private thoughts into engaging conversation starters.
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/InteractionCo/mcp-server-template)
+## 🎯 What It Does
 
-## Local Development
+This system creates a "riff" experience where:
+1. Users privately share ChatGPT conversations with Poke
+2. The server scrapes and digests conversations using Firecrawl + OpenRouter
+3. Poke intelligently decides when to share synthesized insights with the group
+4. Private thoughts become conversation starters while maintaining user privacy
+
+## 🏗️ Architecture
+
+- **MCP Server** (`src/server.py`): Handles link submission and data queries
+- **Webhook Service** (`src/webhook.py`): Async processing and digest generation
+- **Scraper** (`src/scraper.py`): Firecrawl integration for ChatGPT conversation extraction
+- **Database** (`src/database.py`): PostgreSQL storage for conversations and metadata
+- **Prompts** (`src/prompts.py`): LLM prompts for synthesis and formatting
+
+## 📦 Local Development
 
 ### Setup
 
-Fork the repo, then run:
-
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/sxysun/mcp-server-template.git
 cd mcp-server-template
-conda create -n mcp-server python=3.13
-conda activate mcp-server
 pip install -r requirements.txt
 ```
 
-### Test
+### Environment Variables
+
+Create a `.env` file:
 
 ```bash
-python src/server.py
-# then in another terminal run:
-npx @modelcontextprotocol/inspector
+# Required
+DATABASE_URL=postgres://user:pass@host:5432/dbname
+FIRECRAWL_API_KEY=fc-your-api-key
+OPENROUTER_API_KEY=sk-or-v1-your-key
+POKE_API_KEY=pk_your-poke-key
+POKE_API_URL=https://poke.com/api/v1/inbound-sms/webhook
+
+# Optional
+DIGEST_MODEL=nousresearch/hermes-4-405b  # Default: openai/gpt-3.5-turbo
+WEBHOOK_PORT=8001                        # Default: 8001
+ENVIRONMENT=development                  # Default: development
 ```
 
-Open http://localhost:3000 and connect to `http://localhost:8000/mcp` using "Streamable HTTP" transport (NOTE THE `/mcp`!).
+### Run Locally
 
-## Deployment
+```bash
+# Terminal 1 - MCP Server
+python src/server.py
 
-### Option 1: One-Click Deploy
-Click the "Deploy to Render" button above.
+# Terminal 2 - Webhook Service
+python src/webhook.py
 
-### Option 2: Manual Deployment
-1. Fork this repository
-2. Connect your GitHub account to Render
-3. Create a new Web Service on Render
-4. Connect your forked repository
-5. Render will automatically detect the `render.yaml` configuration
+# Terminal 3 - Ngrok (for Poke integration)
+ngrok http 8000
+```
 
-Your server will be available at `https://your-service-name.onrender.com/mcp` (NOTE THE `/mcp`!)
+### Database Setup
 
-## Poke Setup
+The PostgreSQL `riff` table is created automatically on first run. To manually create:
 
-You can connect your MCP server to Poke at (poke.com/settings/connections)[poke.com/settings/connections].
-To test the connection explitly, ask poke somethink like `Tell the subagent to use the "{connection name}" integration's "{tool name}" tool`.
-If you run into persistent issues of poke not calling the right MCP (e.g. after you've renamed the connection) you may send `clearhistory` to poke to delete all message history and start fresh.
-We're working hard on improving the integration use of Poke :)
+```bash
+curl -X POST http://localhost:8001/webhook/setup-database
+```
 
+## 🧪 Testing
 
-## Customization
+### Test Individual Components
 
-Add more tools by decorating functions with `@mcp.tool`:
+```bash
+# Test scraping
+python test_scraper.py
+
+# Check webhook health
+curl http://localhost:8001/health
+
+# Queue a link for processing
+curl -X POST http://localhost:8001/webhook/new-link \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://chatgpt.com/share/..."}'
+```
+
+### Test Full Pipeline
+
+```bash
+# Process all pending + send digest immediately
+curl -X POST http://localhost:8001/webhook/test-full-flow
+```
+
+This will:
+1. Mark all conversations as unshared (for testing)
+2. Scrape all pending ChatGPT links
+3. Generate group digest using OpenRouter
+4. Send to Poke for group sharing
+
+## 🤖 Poke Integration
+
+Connect to Poke at [poke.com/settings/connections](https://poke.com/settings/connections) using your ngrok URL:
+```
+https://your-ngrok-url.ngrok.io
+```
+
+### How Poke Should Behave
+
+**Automatic Link Processing:**
+- When Poke sees ANY ChatGPT share link → automatically calls `submit_chatgpt_link`
+- When users say "riff it" with content → processes via MCP functions
+
+**Intelligent Group Sharing:**
+- Webhook sends digest to Poke
+- Poke decides whether content is worth sharing based on group context
+- Only interesting, discussion-worthy content reaches the group
+- Quality over frequency - no spam
+
+### Available MCP Functions
+
+- `submit_chatgpt_link(url, user_name)` - Submit ChatGPT link for processing
+- `get_daily_conversations(date?)` - Get processed conversations for synthesis
+- `get_user_submissions(user_name)` - View user's submission history
+- `get_conversation_details(url)` - Get full conversation details
+- `mark_as_shared(urls)` - Mark conversations as shared to group
+- `get_known_users()` - List all participating users
+- `get_server_info()` - Comprehensive system documentation
+
+## 🎨 Customization
+
+### Change Digest Model
+
+Update `.env`:
+```bash
+DIGEST_MODEL=anthropic/claude-3-haiku
+```
+
+### Modify Prompts
+
+Edit `src/prompts.py` to change:
+- Individual conversation digest prompts
+- Group synthesis personality and style
+- Decision criteria for sharing
+
+### Adjust Sharing Behavior
+
+The system uses intelligent sharing based on content quality. Modify the criteria in `GROUP_DIGEST_TEMPLATE` within `src/prompts.py`.
+
+## 🔒 Privacy & Security
+
+- Individual ChatGPT submissions are private until synthesized for group
+- Users maintain control over their shared content
+- Group only sees synthesized insights, not raw conversations
+- All API keys should be kept secure in environment variables
+
+## 📊 Features
+
+- ✅ **Automatic ChatGPT link detection**
+- ✅ **Firecrawl-powered conversation scraping**
+- ✅ **OpenRouter digest generation**
+- ✅ **Async webhook processing**
+- ✅ **Intelligent group sharing decisions**
+- ✅ **PostgreSQL conversation storage**
+- ✅ **User privacy preservation**
+- ✅ **Configurable LLM models**
+- ✅ **Comprehensive testing endpoints**
+
+## 🤝 Contributing
+
+This server is designed to be extended. Add more tools by decorating functions with `@mcp.tool`:
 
 ```python
 @mcp.tool
-def calculate(x: float, y: float, operation: str) -> float:
-    """Perform basic arithmetic operations."""
-    if operation == "add":
-        return x + y
-    elif operation == "multiply":
-        return x * y
-    # ...
+def your_custom_function(param: str) -> str:
+    """Description of what your function does."""
+    return f"Processed: {param}"
 ```

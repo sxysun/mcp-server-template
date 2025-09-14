@@ -79,7 +79,7 @@ def get_conversations_by_date(date: Optional[str] = None) -> List[Dict]:
         with conn.cursor() as cur:
             if date:
                 cur.execute("""
-                    SELECT chatgpt_url, user_name, digest, conversation_content, created_at
+                    SELECT chatgpt_url, user_name, digest, conversation_content, created_at, shared_to_group_at
                     FROM riff
                     WHERE DATE(created_at) = %s
                     AND status = 'scraped'
@@ -87,7 +87,7 @@ def get_conversations_by_date(date: Optional[str] = None) -> List[Dict]:
                 """, (date,))
             else:
                 cur.execute("""
-                    SELECT chatgpt_url, user_name, digest, conversation_content, created_at
+                    SELECT chatgpt_url, user_name, digest, conversation_content, created_at, shared_to_group_at
                     FROM riff
                     WHERE DATE(created_at) = CURRENT_DATE
                     AND status = 'scraped'
@@ -123,11 +123,24 @@ def mark_conversations_as_shared(urls: List[str]) -> int:
     with get_connection() as conn:
         with conn.cursor() as cur:
             print(f"Database: Attempting to mark {len(urls)} URLs as shared")
+
+            # Debug: Check what's currently in the database for these URLs
+            cur.execute("""
+                SELECT chatgpt_url, shared_to_group_at, status
+                FROM riff
+                WHERE chatgpt_url = ANY(%s)
+            """, (urls,))
+            existing_rows = cur.fetchall()
+
+            print("Current database state for these URLs:")
+            for row in existing_rows:
+                print(f"  URL: {row['chatgpt_url'][:50]}... | shared_to_group_at: {row['shared_to_group_at']} | status: {row['status']}")
+
+            # Update without the NULL condition to see what happens
             cur.execute("""
                 UPDATE riff
                 SET shared_to_group_at = NOW()
                 WHERE chatgpt_url = ANY(%s)
-                AND shared_to_group_at IS NULL
             """, (urls,))
             conn.commit()
             print(f"Database: Successfully updated {cur.rowcount} rows")

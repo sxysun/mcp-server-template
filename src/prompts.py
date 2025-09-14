@@ -32,6 +32,8 @@ Don't sounds like a robot. Absolutely no emojis, they are hella cringe. Make sur
 
 Some examples:
 Josh spent the day being an expert on 'permaculture gardening', and Leo is clearly a master of 'gourmet mushroom recipes' from his thoughts. If you two started a sustainable food blog, the world wouldn't be ready.
+
+The point is to share those shower thoughts in a filtered way.
 """
 
 # Template for group chat message (after LLM synthesis)

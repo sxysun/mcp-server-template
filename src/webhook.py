@@ -112,6 +112,12 @@ async def periodic_digest_sender():
             # Check if there are any unshared conversations
             unshared_conversations = [conv for conv in all_conversations if not conv.get('shared_to_group_at')]
 
+            # Debug: Print sharing status for each conversation
+            print("Conversation sharing status:")
+            for conv in all_conversations:
+                shared_status = conv.get('shared_to_group_at')
+                print(f"  URL: {conv['chatgpt_url'][:50]}... | Shared: {shared_status}")
+
             if not unshared_conversations:
                 print(f"All {len(all_conversations)} conversations already shared - skipping digest")
                 continue
@@ -127,8 +133,14 @@ async def periodic_digest_sender():
             # Mark the unshared conversations as shared
             unshared_urls = [conv['chatgpt_url'] for conv in unshared_conversations]
             if unshared_urls:
-                mark_conversations_as_shared(unshared_urls)
-                print(f"Marked {len(unshared_urls)} conversations as shared")
+                print(f"About to mark URLs as shared: {unshared_urls}")
+                marked_count = mark_conversations_as_shared(unshared_urls)
+                print(f"Database says {marked_count} conversations were marked as shared")
+
+                # Verify the marking worked by re-querying
+                verification_conversations = get_conversations_by_date()
+                still_unshared = [conv for conv in verification_conversations if not conv.get('shared_to_group_at')]
+                print(f"Verification: {len(still_unshared)} conversations remain unshared after marking")
 
         except Exception as e:
             print(f"Error in periodic digest: {e}")

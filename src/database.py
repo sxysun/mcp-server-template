@@ -122,6 +122,7 @@ def mark_conversations_as_shared(urls: List[str]) -> int:
     """Mark multiple conversations as shared to group"""
     with get_connection() as conn:
         with conn.cursor() as cur:
+            print(f"Database: Attempting to mark {len(urls)} URLs as shared")
             cur.execute("""
                 UPDATE riff
                 SET shared_to_group_at = NOW()
@@ -129,6 +130,7 @@ def mark_conversations_as_shared(urls: List[str]) -> int:
                 AND shared_to_group_at IS NULL
             """, (urls,))
             conn.commit()
+            print(f"Database: Successfully updated {cur.rowcount} rows")
             return cur.rowcount
 
 def mark_all_conversations_as_unshared() -> int:

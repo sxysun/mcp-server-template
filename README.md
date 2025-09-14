@@ -1,6 +1,17 @@
-# ChatGPT Riff Server
+# Riff App
+*share your shower thoughts*
 
-An intelligent MCP server that enables users to privately share ChatGPT conversations with Poke, which then processes and intelligently shares synthesized insights to group chats. Built with [FastMCP](https://github.com/jlowin/fastmcp) and designed to transform private thoughts into engaging conversation starters.
+## How to use?
+
+1. go to poke.com/settings/connections
+2. click on "add integration"
+3. enter "riff" as the name
+4. enter "https://ae753e1dde8d.ngrok-free.app/mcp" as the url (make sure to add "/mcp" to the end)
+5. click "add"
+
+## About
+
+The Riff App intelligent MCP server that enables users to privately share ChatGPT conversations with Poke, which then processes and intelligently shares synthesized insights to group chats. Built with [FastMCP](https://github.com/jlowin/fastmcp) and designed to transform private thoughts into engaging conversation starters.
 
 ## 🎯 What It Does
 

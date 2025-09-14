@@ -94,31 +94,41 @@ async def send_to_poke(message: str, chat_id: str = None):
         print(f"Error sending to Poke: {e}")
 
 async def periodic_digest_sender():
-    """Periodically send digests to Poke group chat"""
+    """Periodically send digests to Poke group chat only if there are unshared conversations"""
     while True:
         try:
             # Wait for the interval
             await asyncio.sleep(DIGEST_INTERVAL_MINUTES * 60)
 
-            print("Preparing daily digest...")
+            print("Checking for unshared conversations...")
 
             # Get today's conversations
-            conversations = get_conversations_by_date()
+            all_conversations = get_conversations_by_date()
 
-            if not conversations:
-                print("No conversations to share today")
+            if not all_conversations:
+                print("No conversations today")
                 continue
 
-            # Create a synthesized message
-            message = await create_group_digest(conversations)
+            # Check if there are any unshared conversations
+            unshared_conversations = [conv for conv in all_conversations if not conv.get('shared_to_group_at')]
+
+            if not unshared_conversations:
+                print(f"All {len(all_conversations)} conversations already shared - skipping digest")
+                continue
+
+            print(f"Found {len(unshared_conversations)} unshared conversations out of {len(all_conversations)} total")
+
+            # Create synthesized message using ALL today's conversations (including previously shared ones)
+            message = await create_group_digest(all_conversations)
 
             # Send to Poke
             await send_to_poke(message)
 
-            # Mark conversations as shared
-            urls = [conv['chatgpt_url'] for conv in conversations if not conv.get('shared_to_group_at')]
-            if urls:
-                mark_conversations_as_shared(urls)
+            # Mark the unshared conversations as shared
+            unshared_urls = [conv['chatgpt_url'] for conv in unshared_conversations]
+            if unshared_urls:
+                mark_conversations_as_shared(unshared_urls)
+                print(f"Marked {len(unshared_urls)} conversations as shared")
 
         except Exception as e:
             print(f"Error in periodic digest: {e}")

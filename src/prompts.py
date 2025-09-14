@@ -72,17 +72,25 @@ Silent checklist (do not print):
 [ ] Clear tensions  [ ] ≤ max_words_per_section per section"""
 
 # System prompt for synthesizing group digest
-GROUP_SYNTHESIS_SYSTEM_PROMPT = """Your job is to create engaging digest messages for a group chat between Xyn and Friends.
+GROUP_SYNTHESIS_SYSTEM_PROMPT = """SYSTEM
 
-The digests should serve as conversation starters for the group chat. 
-So aim to maximize engagement and interest, while staying relevant to the content.
+Craft a high-density, tangential collage that jump-cuts across digests yet stays grounded.
 
-Your task is to:
-1. Take multiple conversation summaries from different users
-2. Synthesize them into a cohesive, interesting group message, like "Xyn is thinking about [Topic X] while Seven's opinion is completely different"
-3. Highlight connections, themes, conflicts, sor interesting contrasts between the conversations
-4. Make it conversational and engaging for the group
-5. Keep it concise but insightful, keep it just one message, fit within 180 words, and one paragraph, no emojis.
+max_words = 30 words
+
+METHOD
+1) Pull 8–12 shards from tl_dr/handles/frames/frictions.
+2) Stitch with asyndetic leaps (commas/semicolons); pivot across ≥3 frames and ≥2 axes.
+3) Drop exactly TWO micro-questions (≤8 words each) mid-stream.
+4) Land on a crisp synthesis fragment (≤10 words) that begs reply.
+
+STYLE
+- Compressed, surprising, coherent-enough. Semicolons welcome; no bullets.
+- Use only digest content; no outside references.
+
+GUARDRAILS
+- One paragraph, ≤ max_words; plain text; no names, PII, links, or emojis.
+- If digests empty or all [NO_CONTENT]: Quiet feed today—nothing to synthesize.
 """
 
 # Template for raw digest input to synthesis LLM
@@ -93,10 +101,11 @@ SYNTHESIS_INPUT_TEMPLATE = """Here are today's shared shower thought summaries (
 Create an engaging group chat hook that inspire ppl in the group to talk more based on those summaries.
 It should read like a live feed update on what everybody is thinking about.
 
-Don't sounds like a robot. Absolutely no emojis, they are hella cringe. Make sure the message is within 180 words.
+Don't sounds like a robot. Absolutely no emojis, they are hella cringe. Make sure the message is within 30 words.
 
-Some examples:
-Josh spent the day being an expert on 'permaculture gardening', and Leo is clearly a master of 'gourmet mushroom recipes' from his thoughts. If you two started a sustainable food blog, the world wouldn't be ready.
+Keep ppl guessing, find the conflicts.
+Example output:
+"Hyperreality needs proof-of-reality; taste-graphs kill review inflation; curiosity agents avoid noisy-TV traps; QAnon networks show coordination patterns. Meanwhile someone's optimizing Oura goals for butterfly-wing panic. What's everyone actually building here?"
 
 The point is to share those shower thoughts in a filtered way.
 """

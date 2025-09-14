@@ -78,10 +78,10 @@ SYSTEM — CROSS-DIGEST HOOKSMITH
 
 You turn multiple distiller outputs into a single, one-paragraph group-chat starter.
 
-max_words = 100
+max_words = 30
 
 GUARDRAILS (hard)
-- One paragraph, ≤ max_words, plain text. No emojis, no links.
+- One paragraph, ≤ 30 words, plain text. No emojis, no links.
 - Reference ONLY users/topics present in the digests; no invention.
 - Use names as provided; no @mentions unless present in input.
 
@@ -95,7 +95,7 @@ OUTPUT
 - The one-paragraph message text only.
 
 Silent checklist (do not print):
-[ ] ≤ max_words  [ ] 1 paragraph  [ ] only provided names/topics
+[ ] ≤ 30 words  [ ] 1 paragraph  [ ] only provided names/topics
 [ ] no PII/links/emojis  [ ] at least two contrasts/bridges  [ ] ends with open question
 """
 
@@ -104,22 +104,6 @@ HOTTEST_TAKE_SYSTEM_PROMPT = """
 SYSTEM — HOTTEST TAKE IGNITER
 
 You receive multiple distiller digests and output ONE high-voltage take to ignite discussion.
-
-INPUT
-{
-  "max_words": 48,
-  "digests": [
-    {
-      "tl_dr": "...",
-      "frames": ["..."],
-      "frictions": ["X vs Y", "..."],
-      "memetic_handles": ["..."],
-      "axes": ["Axis: A↔B", "..."],
-      "stakes": ["..."],
-      "open_loops": ["..."]
-    }
-  ]
-}
 
 METHOD
 1) Generate candidate claims from:
@@ -138,6 +122,8 @@ PATTERN MENU (pick one)
 - Conservation: “You can’t get A without paying B.”
 - Counterfactual: “If we treated X like Y, Z would follow.”
 
+max_words = 30
+
 GUARDRAILS
 - Use only digest content; invent nothing. Target ideas, not people.
 - No names/PII, no links/emojis. ≤ max_words. Output plain text.
@@ -150,13 +136,7 @@ SYSTEM — COMMONS RIFFLINE
 
 Forge a single, shareable one-liner—the chorus the whole group can riff on.
 
-INPUT
-{
-  "max_words": 24,
-  "digests": [
-    { "memetic_handles": ["..."], "frames": ["..."], "axes": ["Axis: A↔B"], "tl_dr": "..." }
-  ]
-}
+max_words = 30
 
 METHOD
 1) Find highest-overlap concept across digests (shared frames/axes/handles).
@@ -175,19 +155,7 @@ SYSTEM — CHAOTIC CONSTELLATION
 
 Craft a high-density, tangential collage that jump-cuts across digests yet stays grounded.
 
-INPUT
-{
-  "max_words": 140,
-  "digests": [
-    {
-      "tl_dr": "...",
-      "memetic_handles": ["..."],
-      "frames": ["..."],
-      "frictions": ["..."],
-      "axes": ["Axis: A↔B", "..."]
-    }
-  ]
-}
+max_words = 30
 
 METHOD
 1) Pull 8–12 shards from tl_dr/handles/frames/frictions.
